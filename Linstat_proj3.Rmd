@@ -1,0 +1,133 @@
+---
+title: "Project 3"
+author: "Vojin Dudic, Maud Rødsmoen, Vilde Brady"
+date: "1/4/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Dare to impress, but at what cost of mess?
+## Introduction
+As a waiter, the most important aspects of your job are to ensure that your customers are content, that they have something in their glasses at all times, and that they feel entertained. This leads to some challenging situations, because the job of a waiter is often stressful and requires swift movements. Serving wine must be done in an elegant manner, but there should not be any spillage on the table. Which wine-serving technique ensures that these two conditions are satisfied? Prior experience shows that people are most impressed when wine is served from a certain height, but this of course is more risky when considering the spillage. This scientific paper aims to find the most elegant yet safe way of serving wine, by analyzing the amount spilled when serving it from a bottle into a glass, using various techniques, and thereby various degrees of elegancy.
+
+## Factors and levels
+
+There are many factors that may influence the amount of wine spilled, when pouring wine from a bottle in a glass. The waiter's experience and eye-sight are two prominent factors that one could think have an effect on the response variable. In this paper, the focus willl be on how the different techniques of pouring affect the amount of water spilled, as the interest lies in pouring the water in the most elegant way to impress the customer. The four chosen factors that will be tested are the height the wine is poured from, which hand is used, the style of pouring and the circumference of the glass.
+
+Two different levels were chosen for each factor, one that is low and one that is high. For the factor `height` the levels were approximately 77 cm and 5 cm above the glass. For the factor `hand` the levels were the left and right hand, and for `style`, backhand and forehand and for `glass` two different circumferences were chosen as well, where one level was a champagne glass normal glass and the other was a normal glass. It is reasonable to look at these levels as they are the most common glasses a waiter will encounter. In addition, it is easy to control that most of the factors really are at the desired level, as two of the factors have discrete levels that do not require measurements. Ensuring that the height was at the desired level was the most difficult one. To solve this, a thread was hung horizontally across the room at the desired height, 77 cm above the glass, and the pouring hand had to be above the thread. 
+
+There may be some interactions between the factors. We expect that the change in difficulty from pouring water when using the dominant hand in a low height to using the dominant hand in a higher height, might be lower than the change when using the non-dominant hand. The type of glass might also interact with the height for the same reason.
+
+## The response variables
+
+In order to measure the main effect and the interaction of the factors we need suitable response variables. A natural choice may be the amount of wine spilled, `spill`, as the spillage should be minimized. The easiest way seems to be measuring the amount of water spilled in grams, so that the measurement is not subject to as many human errors as with reading a measurement on a ruler. After each run the glass is weighed. As we have acquired one of the high-end laboratory weights from the chemistry labs at NTNU Gløshaugen, we are blessed with an accuracy of 10E-4.  
+
+Another possible may response variable may be the degree of elegance, `elegancy`, judged by our test panel. These two variables may be combined in some way, to achieve an overall score, `score`, of the run. The `spill2` column contains the result from the second run of the experiment.
+
+## Experiment Design
+
+We have chosen to do a so-called $2^4$ experiment, which involves 4 factors, each with two different levels.
+We had time to do a full factorial experiment, so we didn't need to to do a fractional factorial experiment. However, if we had limited time, we might have done a $2^{4-1}$ fractional factorial experiment, and the selection of runs would have to be planned more accurately. 
+
+We did not need to apply blocking, as we determined the experimental conditions to be quite constant. The experiment lasted less than an hour, so fatigue and thus sloppiness were avoided. 
+
+These 16 runs were replicated once, so we obtained 32 observations.The replicate is useful in order to strengthen the accuracy and create a model independent estimate of the variance. 
+
+
+## Implementation 
+After selecting factors to observe, the next step was to execute the 16 different runs twice. To ensure that these were done in a completely random order, the FrF2 function was used, from the "Fractional Factorial Designs with 2-Level Factors" library in R.
+
+```{r, eval=TRUE, echo=FALSE}
+
+#install.packages("FrF2")
+#install.packages("nortest")
+library(nortest)
+library(FrF2)
+pla <- FrF2(16,4, factor.names=list(height=c('high', 'low'),glass = c('narrow', 'wide'), 
+                                    hand = c('left', 'right'), style=c('back','fore')),seed=27787)
+pla
+plan <- rbind(pla,pla)
+```
+
+The experiment was performed in the chemistry lab at NTNU Realfagsbygget, as it was necessary to use a very accurate weighing system. Perhaps one could only expect a few drops of wine spilling, and after finding that a droplet of water could weigh as little as 0.5 mg, using a normal kitchen weight would not suffice.
+
+For each run, approximately 100g of water was measured in the analytic chemistry lab weight in the bottle, and was then poured into a glass, satisfying the conditions for that specific run. The water in the glass was then measured and noted. In addition, the weight of the two different types of glasses and the bottle used were measured, so that this could  be subtracted later, to isolate the weight of the water.
+
+Each trial was performed independently, by various people, in an attempt to prevent the participants from becoming increasingly talented. This is however difficult to avoid, and human error can never be completely removed. Each run cannot be said to be a genuine run replicate, meaning that the runs were not necessarily subject to the same kinds of error. When pouring the water at a higher level, it is very likely that there will be more variation of the height than when pouring at a lower level. Allowing two different people to test every run also confirmed this, as the results never matched perfectly, and therefor there must be some error in each run.
+
+## Analysis of data
+
+The results from the experiment are here displayed in a table, and will be subject to statistical analysis.
+
+```{r cars, echo=FALSE}
+fila = read.csv("Linstattre.csv", header = TRUE)
+fila
+```
+
+### Linear regression model
+
+Firstly, we apply a linear regression model to obtain the regression coefficient estimates. These tell us what change in the spill we can expect from a certain variable, if we keep all other variables constant.
+
+```{r, echo=FALSE}
+results <- c(fila[,1],fila[,2])
+fit <- lm(results ~ (.)^4, data=plan)
+summary(fit)
+```
+
+### Main Effects Plot
+
+```{r,echo=FALSE}
+MEPlot(fit)
+```
+
+In the main effects plot, the differences between level means for the different factors are examined. The height and the type of glass seem to have a lot of effect on the spillage. As one lowers the height, the spillage is reduced greatly. Height has the steepest slope of line, and therefor the greatest magnitude of effect. Using a wider glass will also reduce spill. For the variables hand and style, the line is almost horizontal, and there seems to be no main effect present. Using your left or right hand does not change the response, just as forehand and backhand.
+
+The main effects plot does not take into consideration the interactions between different factors. To look at this, an interaction plot was created.
+
+### Interaction Plot
+
+```{r}
+IAPlot(fit)
+```
+
+The interaction plot tells us whether two factors are independent or not. If they are, it is to be expected that there are two parallell lines in these two factors' interaction diagram, meaning that there is no effect by increasing one. It seems like using the backhand or forehand technique does not really effect the amount of spill, no matter what situation is given. 
+
+Instead, more interestingly, the levels of height and glass-width seem to have a lot of interaction. When pouring at a low height, glass-width isn't very important, and it will be quite easy to prevent spilling. At the level high, spilling is almost inevitable, and so a wider glass really helps to catch more of the falling water. This is indicated in both diagrams for the height and glass-width, as the lines are not parallell. The effect of the glass-width is much larger at a high height, and is much more significant than which hand the waiter is using.
+
+### Daniel Plot
+
+```{r}
+DanielPlot(fit)
+```
+
+The Daniel Plot shows which factors seem to be signifact, and the plot indicates that `height`, `glass` and `height:glass` are of significance, as these points to not lie on the straight line created by the other factors. This is as expected, especially if results from above plots are considered. An elevation of 0.77m hould effect the spillage quite a lot, as well as the width of the glass, and the combination of an elevation and a narrow glass. Intuitively, the other factors as `style` and `hand` are less significant as well as higher-order interactions.
+
+### Residuals versus standardized plot
+
+```{r pressure, echo=FALSE}
+residuals <- rstudent(fit)
+plot(fit$fitted,residuals)
+```
+
+Here we see the residuals plotted against the fitted values. Due to only having two values for each scenario, the dots are naturally symmetric. They don't seem to have a distinct pattern, except the gathering of dots close to the point (0,0). The gathering is due to most values of `spill` being very low, while som are extremely high, thus stretching the x-axis quite a lot.
+
+
+### QQ-Plot
+
+```{r, echo=FALSE}
+qqnorm(residuals)
+qqline(residuals)
+ad.test(residuals)
+```
+
+To tell whether or not the data is normally distributed, as assumed to create a linear regression model, a QQ-plot is used, where a theoretical sample from a normal distribution is compared to the sample used in this experiment. The majority of the points seem to lie quite close to the line, but the deviation at the ends indicate a heavier tailed distribution. Its interesting to determine if the samples come from a normal distribution because it is an assumption made in order to apply linear regression. In addition, the Anderson-Darling test indicates that it is quite unlikely that the data followed the normal distribution, and so one must consider if it is even possible to fit the data with a linear regression model.
+
+
+## Conclusion
+
+In this report, the goal was to find what factors are most prone to cause spillage. A $2^4$ factorial experiment was designed and implemented, which provided some results that were analyzed in depth.
+
+Possible flaws in this experiment are human error, and error in measuring, but despite these imperfections, it is still possible to observe some trends. The most important factors were the height from which the liquid was poured, and the width of the glass, and the combination of these two factors. Most of the other factors did not have significant effects, such as which hand you used or if the forehand or backhand technique was used. This is all supported by the Main effects plot and the interaction plot, and so it is possible to conclude that if the goal is to spill as little as possible, the safest bet is doing so very close to the glass.
